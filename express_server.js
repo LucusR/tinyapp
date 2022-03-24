@@ -1,12 +1,27 @@
+
 const express = require("express");
-const app = express();
 const PORT = 8080; //default port 8080
-app.set("view engine", "ejs");
-const cookieParser = require('cookie-parser')
-
+const morgan = require("morgan");
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}), cookieParser());
+// const cookieParser = require('cookie-parser')
+const cookieSession = require('cookie-session')
+const bcrypt = require("bcryptjs")
 
+
+const app = express();
+app.use(morgan('dev'));
+app.set("view engine", "ejs");
+
+
+app.use(bodyParser.urlencoded({extended: true}));
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2', 'key3'],
+
+// Cookie Options
+maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
 
 function generateRandomString() {
 return Math.random().toString(36).slice(-6)
@@ -41,14 +56,31 @@ function checkUserId(email, database) {
   }
 };
 
+//returns all shorturls that belong to user
+function urlsForUser(id, database) {
+  let userURLS = {};
+  for (let short in database) {
+    if (database[short].id === id) {
+      userURLS[short] = database[short]
+    }
+  }
+  return userURLS
+};
+
 const urlDatabase = {
-  "b2xVn2": "www.lighthouselabs.ca",     //try to make sure data is stored in the same format (HTTP://)
-  "9sm5xk": "www.google.com"
+  b2xVn2: {
+    longURL: "www.lighthouselabs.ca", 
+    id: "aJ48lw"
+  },
+  t3B0Gr: {
+    longURL: "www.google.com",
+    id: "aJ48lW"
+  }
 };
 
 const users = {
-  "exampleUser1": {
-    id: "exampleUser1",
+  "aJ48lw": {
+    id: "aJ48lw",
     email: "user@example.com",
     password: "test1"
   },
@@ -60,38 +92,48 @@ const users = {
 }
 
 app.get("/urls", (req, res) => {
-  const templateVars = { 
-    urls: urlDatabase,
-    users,
-    user: req.cookies["user"]
+  let templateVars = { 
+    urls: urlsForUser(req.session.user_id, urlDatabase),
+    user: users[req.session.user_id]
   };
   res.render("urls_index", templateVars);
 });
 
+
+// creates tinyURL
 app.post("/urls", (req, res) => {      
+if (req.session.user_id) {
   const randomURL = generateRandomString();
-  urlDatabase[randomURL] = req.body.longURL;
-  res.redirect('http://localhost:8080/urls/' + randomURL)
+  urlDatabase[randomURL] = {
+    longURL: req.body.longURL,
+    id: req.session.user_id
+}
+res.redirect(`/urls/${randomURL}`)
+} else {
+  res.status(401).send("You must be logged in to create short URLS")
+}
 });
 
+  
 //registers new user
 app.post("/register", (req, res) => {      
 
-  const newUserEmail = req.body.username;
+  const newUserEmail = req.body.email;
   const newUserPassword = req.body.password;
-  const newUserID = generateRandomString();
+  
   
   if ([newUserEmail && newUserPassword].includes('')) {
     res.status(400).send("Email and/or password cannot be left empty!")
   } else if (checkEmail(newUserEmail, users)) {
     res.status(400).send("Email already in use.")
   } else {
+  const newUserID = generateRandomString();
    users[newUserID] = {
-   id: `user${newUserID}`,
+   id: newUserID,
    email: newUserEmail,
    password: newUserPassword
    };
-  res.cookie("user", users[newUserID]); 
+  req.session.user_id = newUserID;
   res.redirect('/urls');
     }
   });
@@ -101,7 +143,7 @@ app.post("/register", (req, res) => {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL],
       users,
-      user: req.cookies["user"]
+      user: users[req.session.user_id]
     };
     res.render("urls_register", templateVars);
   });
@@ -118,7 +160,7 @@ app.post("/login", (req, res) => {
   } else if (!checkPassword(loginPassword, users)) {
     res.status(403).send("Password is incorrect. Please try again!")
   } else {
-    res.cookie("user")
+    req.session.user_id = userID
     res.redirect('/urls');
   }
 });
@@ -128,28 +170,39 @@ app.get("/login", (req, res) => {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
     users,
-    user: req.cookies["user"]
+    user: users[req.session.user_id]
   };
   res.render("urls_login", templateVars);
 });
 
 //logout
 app.post("/logout", (req, res) => {                             
-  res.clearCookie("user")
+  req.session = null;
   res.redirect('/urls');
 });
 
   //deletes URL
 app.post("/urls/:shortURL/delete", (req, res) => {              
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  removableURLS = urlsForUser(req.session.user_id, urlDatabase)
+    if (Object.keys(removableURLS).includes(req.params.shortURL)) {
+      const shortURL = req.params.shortURL;
+      delete urlDatabase[shortURL];
+    res.redirect('/urls');
+    } else {
+      res.status(401).send("Only the creator can modify this URL.")
+    }
 });
 
- //edits URL
-app.post("/urls/:newURL", (req, res) => {                        
-  let shortURL = req.params.newURL
-  urlDatabase[shortURL] = req.body.newURL
+ //edits URL if user is logged in and owns the shortURL
+app.post("/urls/:newURL", (req, res) => {
+  editableURLS = urlsForUser(req.session.user_id, urlDatabase)
+    if (Object.keys(editableURLS).includes(req.params.newURL)) {
+    const shortURL = req.params.newURL
+    urlDatabase[shortURL].longURL = req.body.newURL
   res.redirect('/urls');
+} else {
+  res.status(401).send("Only the creator can modify this URL.")
+}
 });
 
 //includes http:// - this won't work if link already includes it
@@ -171,24 +224,30 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  const userID = req.session.user_id
+  if (!userID) {
+    res.redirect("/login")
+  } else {
   const templateVars = { 
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    users,
-    user: req.cookies["user"]
+    user: users[req.session.user_id]
   };
   res.render("urls_new", templateVars);
+}
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { 
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    users,
-    user: req.cookies["user"]
-  };
-  res.render("urls_show", templateVars);
-});
+  if (urlDatabase[req.params.shortURL]) {
+    const templateVars = { 
+      shortURL: req.params.shortURL,
+      longURL: urlDatabase[req.params.shortURL],
+      urlUserID: urlDatabase[req.params.shortURL].id,
+      user: users[req.session.user_id]
+    };
+    res.render("urls_show", templateVars);
+  }
+  });
 
 app.listen(PORT, () => {
   console.log('Example app listening on port ${PORT}!');
