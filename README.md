@@ -6,25 +6,25 @@ This application was built for education purposes - proceed with caution!
 
 ## Final Product
 
-### Home screen where users can login or register:
+### 1) Home screen where users can login or register:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss1.png "Home Screen")
 
-### Registration Page:
+### 2) Registration Page:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss2.png "Register")
 
-### Prompt indicating that a user is logged in and has the option to log out:
+### 3) Prompt indicating that a user is logged in and has the option to log out:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss3.png "Prompt when user logged in")
 
-### Form to generate a TinyURL:
+### 4) Form to generate a TinyURL:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss4.png "Create TinyURL")
 
-### TinyURL on display:
+### 5) TinyURL on display:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss5.png "Display TinyURL")
 
-### All TinyURL's on display:
+### 6) All TinyURL's on display:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss6.png "Display all TinyURL's")
 
-### Page to modify an existing TinyURL:
+### 7) Page to modify an existing TinyURL:
 ![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss7.png "Edit TinyURL")
 
 
