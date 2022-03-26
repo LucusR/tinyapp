@@ -24,8 +24,9 @@
       <tbody>
         <% for(let url in urls) { %>
           <tr>
-            <td><%= url %></td>
-            <td><%= urls[url] %></td>
+            <td>
+              <p class="card-text"><a href="//<%= urls[url].longURL %>">localhost:8080/u/<%= url %></a></p>
+            <td><%= urls[url].longURL %></td>
             
             <td> 
                 <a href="/urls/<%= url %>">
