@@ -2,15 +2,12 @@ const express = require("express");
 const PORT = 8080; //default port 8080;
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
-// const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
-
 
 const app = express();
 app.use(morgan('dev'));
 app.set("view engine", "ejs");
-
 
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -22,11 +19,10 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
-
 //helper functions
 const { generateRandomString, getUserByEmail, urlsForUser } = require("./helpers");
 
-
+//URL Database
 const urlDatabase = {
   b2xVn2: {
     longURL: "www.lighthouselabs.ca",
@@ -34,6 +30,7 @@ const urlDatabase = {
   },
 };
 
+//User Database
 const users = {
   "aJ48lw": {
     id: "aJ48lw",
@@ -41,15 +38,6 @@ const users = {
     password: "test1"
   },
 };
-
-app.get("/urls", (req, res) => {
-  let templateVars = {
-    urls: urlsForUser(req.session.user_id, urlDatabase),
-    user: users[req.session.user_id]
-  };
-  res.render("urls_index", templateVars);
-});
-
 
 // creates tinyURL
 app.post("/urls", (req, res) => {
@@ -65,13 +53,11 @@ app.post("/urls", (req, res) => {
   }
 });
 
-  
 //registers new user
 app.post("/register", (req, res) => {
 
   const newUserEmail = req.body.email;
   const newUserPassword = req.body.password;
-  
   
   if ([newUserEmail && newUserPassword].includes('')) {
     res.status(400).send("Email and/or password cannot be left empty!");
@@ -87,16 +73,6 @@ app.post("/register", (req, res) => {
     req.session.user_id = newUserID;
     res.redirect('/urls');
   }
-});
-  
-app.get("/register", (req, res) => {
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    users,
-    user: users[req.session.user_id]
-  };
-  res.render("urls_register", templateVars);
 });
 
 //login
@@ -119,17 +95,7 @@ app.post("/login", (req, res) => {
   }
 });
 
-app.get("/login", (req, res) => {
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    users,
-    user: users[req.session.user_id]
-  };
-  res.render("urls_login", templateVars);
-});
-
-//logout
+//logout and clear session cookies
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect('/urls');
@@ -159,6 +125,39 @@ app.post("/urls/:newURL", (req, res) => {
   }
 });
 
+//registration page
+app.get("/register", (req, res) => {
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    users,
+    user: users[req.session.user_id]
+  };
+  res.render("urls_register", templateVars);
+});
+
+//page of generated shorturls by user
+app.get("/urls", (req, res) => {
+  let templateVars = {
+    urls: urlsForUser(req.session.user_id, urlDatabase),
+    user: users[req.session.user_id]
+  };
+  res.render("urls_index", templateVars);
+});
+
+
+// login page/prompt
+app.get("/login", (req, res) => {
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    users,
+    user: users[req.session.user_id]
+  };
+  res.render("urls_login", templateVars);
+});
+
+//redirects to /urls if logged in, if not logged in redirects to login prompt
 app.get("/", (req, res) => {
   if (req.session.user_id) {
     res.redirect("/urls");
@@ -167,6 +166,7 @@ app.get("/", (req, res) => {
   }
 });
 
+//page for creating new tinyurl, if not logged in redirects to login page
 app.get("/urls/new", (req, res) => {
   const userID = req.session.user_id;
   if (!userID) {
@@ -181,6 +181,7 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
+//page for particular shorturl where user can view and modify url
 app.get("/urls/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
     const templateVars = {
@@ -195,11 +196,15 @@ app.get("/urls/:shortURL", (req, res) => {
   }
 });
 
+//the physical shorturl that redirects to longurl
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL
-  res.redirect('http://' + longURL);                           
+  if (longURL.startsWith("http")) {
+    return res.redirect(longURL);
+  } 
+  res.redirect(`http://${longURL}`);                 
 });
 
 app.listen(PORT, () => {
-  console.log('Example app listening on port ${PORT}!');
+  console.log(`Example app listening on port ${PORT}!`);
 });
