@@ -7,13 +7,13 @@ This application was built for education purposes - proceed with caution!
 ## Final Product
 
 
-![Alt text](/relative/path/to/img.jpg?raw=true "Home Screen")
-![Alt text](/relative/path/to/img.jpg?raw=true "Register")
-![Alt text](/relative/path/to/img.jpg?raw=true "Prompt when user logged in")
-![Alt text](/relative/path/to/img.jpg?raw=true "Create TinyURL")
-![Alt text](/relative/path/to/img.jpg?raw=true "Display TinyURL")
-![Alt text](/relative/path/to/img.jpg?raw=true "Display all TinyURL's")
-![Alt text](/relative/path/to/img.jpg?raw=true "Edit TinyURL")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss1.png "Home Screen")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss2.png "Register")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss3.png "Prompt when user logged in")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss4.png "Create TinyURL")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss5.png "Display TinyURL")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss6.png "Display all TinyURL's")
+![Alt text](https://github.com/LucusR/tinyapp/blob/master/misc/ss7.png "Edit TinyURL")
 
 
 ## Dependencies
